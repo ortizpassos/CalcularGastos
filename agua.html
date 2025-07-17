@@ -101,20 +101,29 @@ body.dark-mode .btn-outline-dark:hover {
 
     <div class="container text-end mt-3">
     <button id="toggleTheme" class="btn btn-outline-dark btn-sm">
-        <i class="bi bi-moon-fill"></i> Modo Escuro</button></div>
-
-        <div class="position-absolute top-0 start-0 m-3">
-  <a href="index.html" class="btn btn-success btn-lg rounded-pill px-4">
-    <i class="bi bi-arrow-left"></i> Voltar
-  </a>
-</div>
-
-
-
-      
+        <i class="bi bi-moon-fill"></i> Modo Escuro
+    </button>
     </div>
 
-  <div class="container my-5">
+
+    <!-- Container principal centralizado com largura máxima e margem reduzida -->
+    <div class="container mx-auto mt-0" style="max-width: 800px;">
+    <div class="d-flex flex-column gap-3 align-items-center">
+        <!-- Botão VOLTAR verde -->
+        <a href="index.html" class="btn btn-outline-dark btn-lg w-100" style="color: #28a745; border-color: #28a745;">
+        <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+
+        <!-- Botão CALCULAR LUZ laranja -->
+        <a href="luz.html" class="btn btn-outline-dark btn-lg w-100" style="color: #fd7e14; border-color: #fd7e14;">
+        <i class="bi bi-lightbulb"></i> Calcular Luz
+        </a>
+    </div>
+    </div>
+
+    
+   
+  <div class="container my-0">
     <div class="card shadow-sm">
         <h1 class="card-title text-primary mb-4 text-center">
         <i class="bi bi-droplet-half"></i> Calculadora de Fatura de Água
