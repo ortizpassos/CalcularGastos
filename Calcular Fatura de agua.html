@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora de Fatura de Água</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .result-table th {
+      background-color: #0d6efd;
+      color: white;
+    }
+    .card {
+      max-width: 900px;
+      margin: 50px auto;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container py-5">
+    <div class="card shadow">
+      <div class="card-body">
+        <h1 class="card-title text-primary mb-4">
+          <i class="bi bi-droplet-half"></i> Calculadora de Fatura de Água
+        </h1>
+
+        <!-- TUDO NO MESMO CONTAINER -->
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">
+            Dados da Fatura e Leituras
+          </div>
+          <div class="card-body">
+            <!-- Dados da fatura -->
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="valorTotalFatura" class="form-label">Valor Total da Fatura (R$)</label>
+                <input type="number" class="form-control" id="valorTotalFatura" placeholder="Ex: 150.50">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="consumoTotalM3" class="form-label">Consumo Total (m³)</label>
+                <input type="number" class="form-control" id="consumoTotalM3" placeholder="Ex: 25">
+              </div>
+            </div>
+
+            <!-- Bloco inicial para leituras anteriores -->
+            <div id="blocoLeituraAnteriorInicial" class="alert alert-warning">
+              <h5 class="alert-heading"><i class="bi bi-exclamation-triangle-fill"></i> Primeiro Uso Detectado!</h5>
+              <p>Por favor, insira as leituras anteriores para o primeiro cálculo.</p>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="leituraAnteriorKarinaInicial" class="form-label">Leitura Anterior Karina (m³)</label>
+                  <input type="number" class="form-control" id="leituraAnteriorKarinaInicial">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="leituraAnteriorDavidInicial" class="form-label">Leitura Anterior David (m³)</label>
+                  <input type="number" class="form-control" id="leituraAnteriorDavidInicial">
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloco das leituras salvas -->
+            <div id="blocoLeituraAnteriorSalva" class="d-none">
+              <p><strong>Leituras Anteriores Salvas:</strong></p>
+              <ul>
+                <li><i class="bi bi-person-circle text-primary"></i> Karina: <strong id="leituraAnteriorKarinaSalva" class="text-primary"></strong> m³</li>
+                <li><i class="bi bi-person-circle text-primary"></i> David: <strong id="leituraAnteriorDavidSalva" class="text-primary"></strong> m³</li>
+              </ul>
+              <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#senhaModal">
+                <i class="bi bi-pencil-square"></i> Alterar Leituras Anteriores
+              </button>
+              <hr>
+            </div>
+
+            <!-- Leituras atuais -->
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="leituraAtualKarina" class="form-label">Leitura ATUAL Karina (m³)</label>
+                <input type="number" class="form-control" id="leituraAtualKarina">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="leituraAtualDavid" class="form-label">Leitura ATUAL David (m³)</label>
+                <input type="number" class="form-control" id="leituraAtualDavid">
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="d-grid">
+          <button class="btn btn-success btn-lg" onclick="calcularFatura()">
+            <i class="bi bi-calculator"></i> Calcular Divisão
+          </button>
+        </div>
+
+        <!-- RESULTADOS -->
+        <div id="blocoResultados" class="mt-5" style="display:none;">
+          <h3 class="text-success text-center mb-3">
+            <i class="bi bi-check-circle-fill"></i> Resultados da Divisão
+          </h3>
+          <div class="alert alert-danger d-none" id="alertaErro"></div>
+          <table class="table table-bordered result-table text-center">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Consumo (m³)</th>
+                <th>Valor a pagar (R$)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Karina</td>
+                <td id="consumoKarina"></td>
+                <td id="valorKarina"></td>
+              </tr>
+              <tr>
+                <td>David</td>
+                <td id="consumoDavid"></td>
+                <td id="valorDavid"></td>
+              </tr>
+              <tr>
+                <td>Tatiana</td>
+                <td id="consumoTatiana"></td>
+                <td id="valorTatiana"></td>
+              </tr>
+              <tr class="table-primary">
+                <td><strong>Total</strong></td>
+                <td id="consumoTotal"></td>
+                <td id="valorTotal"></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="alert alert-info mt-3">
+            O cálculo foi baseado em um valor de <strong>R$ <span id="valorPorM3"></span> por m³</strong>. As leituras atuais foram salvas como as novas leituras anteriores para o próximo cálculo.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Senha -->
+  <div class="modal fade" id="senhaModal" tabindex="-1" aria-labelledby="senhaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="senhaModalLabel"><i class="bi bi-shield-lock-fill"></i> Acesso Restrito</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Para alterar as leituras anteriores, por favor, insira a senha.</p>
+          <input type="password" class="form-control" id="senhaInput" placeholder="Senha">
+          <div class="invalid-feedback">Senha incorreta.</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="verificarSenha()">
+            <i class="bi bi-check2"></i> Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    const SENHA_MESTRA = 'admin123';
+
+    const blocoInicial = document.getElementById('blocoLeituraAnteriorInicial');
+    const blocoSalvo = document.getElementById('blocoLeituraAnteriorSalva');
+    const senhaInput = document.getElementById('senhaInput');
+    const modalElement = document.getElementById('senhaModal');
+    const senhaModal = new bootstrap.Modal(modalElement);
+
+    window.onload = function() {
+      const leituraAnteriorKarina = localStorage.getItem('leituraAnteriorKarina');
+      const leituraAnteriorDavid = localStorage.getItem('leituraAnteriorDavid');
+
+      if (leituraAnteriorKarina !== null && leituraAnteriorDavid !== null) {
+        document.getElementById('leituraAnteriorKarinaSalva').textContent = leituraAnteriorKarina;
+        document.getElementById('leituraAnteriorDavidSalva').textContent = leituraAnteriorDavid;
+        blocoInicial.classList.add('d-none');
+        blocoSalvo.classList.remove('d-none');
+      } else {
+        blocoInicial.classList.remove('d-none');
+        blocoSalvo.classList.add('d-none');
+      }
+    };
+
+    function getLeituraAnterior() {
+      let karina, david;
+      if (blocoInicial.classList.contains('d-none')) {
+        karina = parseFloat(localStorage.getItem('leituraAnteriorKarina'));
+        david = parseFloat(localStorage.getItem('leituraAnteriorDavid'));
+      } else {
+        karina = parseFloat(document.getElementById('leituraAnteriorKarinaInicial').value);
+        david = parseFloat(document.getElementById('leituraAnteriorDavidInicial').value);
+      }
+      return { karina, david };
+    }
+
+    function validarCampos(leiturasAnteriores, leiturasAtuais, fatura) {
+      const alertaErro = document.getElementById('alertaErro');
+      let mensagensErro = [];
+
+      if (isNaN(fatura.valorTotal) || fatura.valorTotal <= 0) mensagensErro.push('Valor total da fatura inválido.');
+      if (isNaN(fatura.consumoTotal) || fatura.consumoTotal <= 0) mensagensErro.push('Consumo total em m³ inválido.');
+      if (isNaN(leiturasAnteriores.karina)) mensagensErro.push('Leitura anterior de Karina inválida.');
+      if (isNaN(leiturasAnteriores.david)) mensagensErro.push('Leitura anterior de David inválida.');
+      if (isNaN(leiturasAtuais.karina) || leiturasAtuais.karina < leiturasAnteriores.karina) mensagensErro.push('Leitura atual de Karina inválida ou menor que a anterior.');
+      if (isNaN(leiturasAtuais.david) || leiturasAtuais.david < leiturasAnteriores.david) mensagensErro.push('Leitura atual de David inválida ou menor que a anterior.');
+
+      if (mensagensErro.length > 0) {
+        alertaErro.innerHTML = mensagensErro.join('<br>');
+        alertaErro.classList.remove('d-none');
+        document.getElementById('blocoResultados').style.display = 'none';
+        return false;
+      }
+      
+      alertaErro.classList.add('d-none');
+      return true;
+    }
+
+    function calcularFatura() {
+      const leiturasAnteriores = getLeituraAnterior();
+      const leiturasAtuais = {
+        karina: parseFloat(document.getElementById('leituraAtualKarina').value),
+        david: parseFloat(document.getElementById('leituraAtualDavid').value)
+      };
+      const fatura = {
+        valorTotal: parseFloat(document.getElementById('valorTotalFatura').value),
+        consumoTotal: parseFloat(document.getElementById('consumoTotalM3').value)
+      };
+
+      if (!validarCampos(leiturasAnteriores, leiturasAtuais, fatura)) {
+        return;
+      }
+
+      const valorPorM3 = fatura.valorTotal / fatura.consumoTotal;
+      const consumoKarina = leiturasAtuais.karina - leiturasAnteriores.karina;
+      const consumoDavid = leiturasAtuais.david - leiturasAnteriores.david;
+      const consumoTatiana = fatura.consumoTotal - (consumoKarina + consumoDavid);
+
+      const valorKarina = consumoKarina * valorPorM3;
+      const valorDavid = consumoDavid * valorPorM3;
+      const valorTatiana = consumoTatiana * valorPorM3;
+
+      document.getElementById('consumoKarina').textContent = consumoKarina.toFixed(2);
+      document.getElementById('consumoDavid').textContent = consumoDavid.toFixed(2);
+      document.getElementById('consumoTatiana').textContent = consumoTatiana.toFixed(2);
+      document.getElementById('consumoTotal').textContent = fatura.consumoTotal.toFixed(2);
+
+      document.getElementById('valorKarina').textContent = valorKarina.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      document.getElementById('valorDavid').textContent = valorDavid.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      document.getElementById('valorTatiana').textContent = valorTatiana.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      document.getElementById('valorTotal').textContent = fatura.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+      document.getElementById('valorPorM3').textContent = valorPorM3.toFixed(4);
+      document.getElementById('blocoResultados').style.display = 'block';
+
+      localStorage.setItem('leituraAnteriorKarina', leiturasAtuais.karina);
+      localStorage.setItem('leituraAnteriorDavid', leiturasAtuais.david);
+
+      if (!blocoInicial.classList.contains('d-none')) {
+        window.onload();
+      }
+    }
+
+    function verificarSenha() {
+      if (senhaInput.value === SENHA_MESTRA) {
+        senhaInput.classList.remove('is-invalid');
+        senhaModal.hide();
+
+        blocoInicial.classList.remove('d-none');
+        blocoSalvo.classList.add('d-none');
+        document.getElementById('leituraAnteriorKarinaInicial').value = localStorage.getItem('leituraAnteriorKarina');
+        document.getElementById('leituraAnteriorDavidInicial').value = localStorage.getItem('leituraAnteriorDavid');
+      } else {
+        senhaInput.classList.add('is-invalid');
+      }
+    }
+
+    modalElement.addEventListener('hidden.bs.modal', function () {
+      senhaInput.classList.remove('is-invalid');
+      senhaInput.value = '';
+    });
+  </script>
+
+</body>
+</html>
