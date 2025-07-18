@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora de Fatura de Luz</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #f0f2f5;
+    }
+
+    .container {
+      max-width: 800px;
+      padding: 1rem;
+    }
+
+    #blocoResultados {
+      display: none;
+    }
+
+    .card-header {
+      font-weight: bold;
+    }
+
+    .result-table th {
+      background-color: #fd7e14; /* laranja bootstrap */
+      color: white;
+    }
+
+    @media (max-width: 576px) {
+      h1.card-title {
+        font-size: 1.4rem;
+        text-align: center;
+      }
+
+      .form-label {
+        font-size: 0.9rem;
+      }
+
+      .table thead {
+        font-size: 0.85rem;
+      }
+
+      .table tbody {
+        font-size: 0.85rem;
+      }
+
+      canvas#graficoConsumo {
+        max-width: 100% !important;
+        height: auto !important;
+      }
+    }
+
+    body.dark-mode {
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+
+    body.dark-mode .card {
+      background-color: #1e1e1e;
+      color: #e0e0e0;
+      border: 1px solid #333;
+    }
+
+    body.dark-mode .form-control,
+    body.dark-mode .btn,
+    body.dark-mode .modal-content,
+    body.dark-mode .table {
+      background-color: #2c2c2c;
+      color: #e0e0e0;
+      border-color: #444;
+    }
+
+    body.dark-mode .result-table th {
+      background-color: #5a3d00 !important; /* tom mais escuro de laranja */
+      color: #fff;
+    }
+
+    body.dark-mode .btn-outline-secondary,
+    body.dark-mode .btn-outline-primary,
+    body.dark-mode .btn-outline-dark {
+      border-color: #aaa;
+      color: #e0e0e0;
+    }
+
+    body.dark-mode .btn-outline-dark:hover {
+      background-color: #444;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container text-end mt-3">
+    <button id="toggleTheme" class="btn btn-outline-dark btn-sm">
+      <i class="bi bi-moon-fill"></i> Modo Escuro
+    </button>
+  </div>
+
+
+  <!-- Container principal centralizado com largura máxima e margem reduzida -->
+    <div class="container mx-auto mt-1" style="max-width: 800px;">
+    <div class="d-flex flex-column gap-3 align-items-center">
+        <!-- Botão VOLTAR verde -->
+        <a href="index.html" class="btn btn-outline-dark btn-lg w-100" style="color: #28a745; border-color: #28a745;">
+        <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+
+        <!-- Botão CALCULAR ÁGUA azul -->
+        <a href="agua.html" class="btn btn-outline-dark btn-lg w-100" style="color: #0d6efd; border-color: #0d6efd;">
+        <i class="bi bi-droplet"></i> Calcular Água
+        </a>
+    </div>
+    </div>
+
+
+
+
+  <div class="container my-0">
+    <div class="card shadow-sm">
+      <h1 class="card-title text-warning mb-4 text-center">
+        <i class="bi bi-lightning-charge-fill"></i> Calculadora de Fatura de Luz
+      </h1>
+
+      <div class="card-body">
+
+        <!-- 1. DADOS DA FATURA -->
+        <div class="mb-4">
+          <h5 class="mb-3">Dados da Fatura</h5>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="valorTotalFatura" class="form-label">Valor Total da Fatura (R$)</label>
+              <input type="number" class="form-control" id="valorTotalFatura" placeholder="Ex: 150.50" />
+              <div class="invalid-feedback">Campo inválido.</div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="consumoTotalKwh" class="form-label">Consumo Total (kWh)</label>
+              <input type="number" class="form-control" id="consumoTotalKwh" placeholder="Ex: 350" />
+              <div class="invalid-feedback">Campo inválido.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. LEITURAS ANTERIORES -->
+        <div id="blocoLeituraAnteriorInicial" class="alert alert-warning">
+          <h5 class="alert-heading"><i class="bi bi-exclamation-triangle-fill"></i> Primeiro Uso Detectado!</h5>
+          <p>Por favor, insira as leituras anteriores para o primeiro cálculo.</p>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="leituraAnteriorKarinaInicial" class="form-label">Leitura anterior Karina (kWh)</label>
+              <input type="number" class="form-control" id="leituraAnteriorKarinaInicial" />
+              <div class="invalid-feedback">Campo inválido.</div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="leituraAnteriorDavidInicial" class="form-label">Leitura anterior David (kWh)</label>
+              <input type="number" class="form-control" id="leituraAnteriorDavidInicial" />
+              <div class="invalid-feedback">Campo inválido.</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="blocoLeituraAnteriorSalva" class="d-none">
+          <p><strong>Leituras anteriores salvas:</strong></p>
+          <ul>
+            <li>Karina: <strong id="leituraAnteriorKarinaSalva" class="text-warning"></strong> kWh</li>
+            <li>David: <strong id="leituraAnteriorDavidSalva" class="text-warning"></strong> kWh</li>
+          </ul>
+          <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#senhaModal">
+            Alterar Leituras Anteriores
+          </button>
+          <hr />
+        </div>
+
+        <!-- 3. LEITURAS ATUAIS -->
+        <div class="mb-4">
+          <h5 class="mb-3">Leituras Atuais</h5>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="leituraAtualKarina" class="form-label"><strong>Leitura atual Karina (kWh)</strong></label>
+              <input type="number" class="form-control" id="leituraAtualKarina" />
+              <div class="invalid-feedback">Campo inválido.</div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="leituraAtualDavid" class="form-label"><strong>Leitura atual David (kWh)</strong></label>
+              <input type="number" class="form-control" id="leituraAtualDavid" />
+              <div class="invalid-feedback">Campo inválido.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-4">
+          <button class="btn btn-warning" onclick="calcularFatura()">
+            <i class="bi bi-calculator"></i> Calcular Divisão
+          </button>
+          <button class="btn btn-danger" onclick="exportarPDF()">
+            <i class="bi bi-file-earmark-pdf-fill"></i> Exportar Histórico PDF
+          </button>
+        </div>
+
+        <div id="alertaErro" class="alert alert-danger d-none"></div>
+
+        <!-- 4. RESULTADOS -->
+        <div id="blocoResultados" class="mt-4">
+          <h4 class="text-success"><i class="bi bi-check-circle-fill"></i> Resultado</h4>
+          <p><strong>Valor Total da Fatura:</strong> R$ <span id="valorTotal"></span></p>
+          <p><strong>Consumo Total:</strong> <span id="consumoTotal"></span> kWh</p>
+          <p><strong>Preço médio por kWh:</strong> R$ <span id="valorPorKwh"></span></p>
+
+          <table class="table table-bordered mt-3 result-table text-center">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Consumo (kWh)</th>
+                <th>Valor a pagar (R$)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><i class="bi bi-person-circle text-warning"></i> Karina</td>
+                <td id="consumoKarina"></td>
+                <td id="valorKarina"></td>
+              </tr>
+              <tr>
+                <td><i class="bi bi-person-circle text-warning"></i> David</td>
+                <td id="consumoDavid"></td>
+                <td id="valorDavid"></td>
+              </tr>
+              <tr>
+                <td><i class="bi bi-person-circle text-warning"></i> Tatiana</td>
+                <td id="consumoTatiana"></td>
+                <td id="valorTatiana"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- GRAFICO -->
+        <div class="mt-5">
+          <h5 class="text-center">Gráfico de Consumo (kWh)</h5>
+          <canvas id="graficoConsumo" height="100"></canvas>
+        </div>
+
+        <!-- Tabela Histórico -->
+        <div id="blocoHistorico" class="mt-4">
+          <h5><i class="bi bi-clock-history"></i> Histórico de Cálculos</h5>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered text-center">
+              <thead class="table-light">
+                <tr>
+                  <th>Data</th>
+                  <th>Nome</th>
+                  <th>Consumo (kWh)</th>
+                  <th>Valor a Pagar (R$)</th>
+                  <th>Consumo Total</th>
+                  <th>Valor Total</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaHistorico"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Senha -->
+  <div class="modal fade" id="senhaModal" tabindex="-1" aria-labelledby="senhaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="senhaModalLabel">Acesso Restrito</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <p>Para alterar as leituras anteriores, por favor, insira a senha.</p>
+          <input type="password" class="form-control" id="senhaInput" placeholder="Senha" />
+          <div class="invalid-feedback">Senha incorreta.</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="verificarSenha()">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+  <script>
+    const SENHA_MESTRA = '1989';
+
+let graficoConsumo = null;
+const blocoInicial = document.getElementById('blocoLeituraAnteriorInicial');
+const blocoSalvo = document.getElementById('blocoLeituraAnteriorSalva');
+const senhaInput = document.getElementById('senhaInput');
+const modalElement = document.getElementById('senhaModal');
+const senhaModal = new bootstrap.Modal(modalElement);
+
+const API_BASE = 'http://localhost:3000/api/luz'; // Ajuste URL se necessário
+
+window.onload = async function () {
+  try {
+    const respLeituras = await fetch(`${API_BASE}/leituras`);
+    const leituras = await respLeituras.json();
+
+    if (leituras.karina !== undefined && leituras.david !== undefined) {
+      document.getElementById('leituraAnteriorKarinaSalva').textContent = leituras.karina;
+      document.getElementById('leituraAnteriorDavidSalva').textContent = leituras.david;
+      blocoInicial.classList.add('d-none');
+      blocoSalvo.classList.remove('d-none');
+    } else {
+      blocoInicial.classList.remove('d-none');
+      blocoSalvo.classList.add('d-none');
+    }
+  } catch {
+    blocoInicial.classList.remove('d-none');
+    blocoSalvo.classList.add('d-none');
+  }
+
+  try {
+    const respHistorico = await fetch(`${API_BASE}/historico`);
+    const historico = await respHistorico.json();
+    renderizarHistorico(historico);
+  } catch {
+    renderizarHistorico([]);
+  }
+};
+
+function getLeituraAnterior() {
+  let karina, david;
+  if (blocoInicial.classList.contains('d-none')) {
+    karina = parseFloat(document.getElementById('leituraAnteriorKarinaSalva').textContent);
+    david = parseFloat(document.getElementById('leituraAnteriorDavidSalva').textContent);
+  } else {
+    karina = parseFloat(document.getElementById('leituraAnteriorKarinaInicial').value);
+    david = parseFloat(document.getElementById('leituraAnteriorDavidInicial').value);
+  }
+  return { karina, david };
+}
+
+function validarCampos(leiturasAnteriores, leiturasAtuais, fatura) {
+  const alertaErro = document.getElementById('alertaErro');
+  let mensagensErro = [];
+
+  function marcarCampo(id, valido) {
+    const campo = document.getElementById(id);
+    if (!campo) return;
+    campo.classList.remove('is-valid', 'is-invalid');
+    campo.classList.add(valido ? 'is-valid' : 'is-invalid');
+  }
+
+  // Valida fatura
+  const faturaValida = !isNaN(fatura.valorTotal) && fatura.valorTotal > 0;
+  const consumoValido = !isNaN(fatura.consumoTotal) && fatura.consumoTotal > 0;
+  marcarCampo('valorTotalFatura', faturaValida);
+  marcarCampo('consumoTotalKwh', consumoValido);
+  if (!faturaValida) mensagensErro.push('Valor total da fatura inválido.');
+  if (!consumoValido) mensagensErro.push('Consumo total em kWh inválido.');
+
+  // Valida leituras anteriores
+  const antKarina = !isNaN(leiturasAnteriores.karina);
+  const antDavid = !isNaN(leiturasAnteriores.david);
+  marcarCampo('leituraAnteriorKarinaInicial', antKarina);
+  marcarCampo('leituraAnteriorDavidInicial', antDavid);
+  if (!antKarina) mensagensErro.push('Leitura anterior de Karina inválida.');
+  if (!antDavid) mensagensErro.push('Leitura anterior de David inválida.');
+
+  // Valida leituras atuais
+  const atualKarina = !isNaN(leiturasAtuais.karina) && leiturasAtuais.karina >= leiturasAnteriores.karina;
+  const atualDavid = !isNaN(leiturasAtuais.david) && leiturasAtuais.david >= leiturasAnteriores.david;
+  marcarCampo('leituraAtualKarina', atualKarina);
+  marcarCampo('leituraAtualDavid', atualDavid);
+  if (!atualKarina) mensagensErro.push('Leitura atual de Karina inválida ou menor que a anterior.');
+  if (!atualDavid) mensagensErro.push('Leitura atual de David inválida ou menor que a anterior.');
+
+  if (mensagensErro.length > 0) {
+    alertaErro.innerHTML = mensagensErro.join('<br>');
+    alertaErro.classList.remove('d-none');
+    document.getElementById('blocoResultados').style.display = 'none';
+    return false;
+  }
+
+  alertaErro.classList.add('d-none');
+  return true;
+}
+
+async function calcularFatura() {
+  const leiturasAnteriores = getLeituraAnterior();
+  const leiturasAtuais = {
+    karina: parseFloat(document.getElementById('leituraAtualKarina').value),
+    david: parseFloat(document.getElementById('leituraAtualDavid').value)
+  };
+  const fatura = {
+    valorTotal: parseFloat(document.getElementById('valorTotalFatura').value),
+    consumoTotal: parseFloat(document.getElementById('consumoTotalKwh').value)
+  };
+
+  if (!validarCampos(leiturasAnteriores, leiturasAtuais, fatura)) {
+    return;
+  }
+
+  const valorPorKwh = fatura.valorTotal / fatura.consumoTotal;
+  const consumoKarina = leiturasAtuais.karina - leiturasAnteriores.karina;
+  const consumoDavid = leiturasAtuais.david - leiturasAnteriores.david;
+  const consumoTatiana = fatura.consumoTotal - (consumoKarina + consumoDavid);
+
+  const valorKarina = consumoKarina * valorPorKwh;
+  const valorDavid = consumoDavid * valorPorKwh;
+  const valorTatiana = consumoTatiana * valorPorKwh;
+
+  document.getElementById('consumoKarina').textContent = consumoKarina.toFixed(2);
+  document.getElementById('consumoDavid').textContent = consumoDavid.toFixed(2);
+  document.getElementById('consumoTatiana').textContent = consumoTatiana.toFixed(2);
+  document.getElementById('consumoTotal').textContent = fatura.consumoTotal.toFixed(2);
+
+  document.getElementById('valorKarina').textContent = valorKarina.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  document.getElementById('valorDavid').textContent = valorDavid.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  document.getElementById('valorTatiana').textContent = valorTatiana.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  document.getElementById('valorTotal').textContent = fatura.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  document.getElementById('valorPorKwh').textContent = valorPorKwh.toFixed(4);
+
+  // Salvar leituras anteriores via API
+  try {
+    await fetch(`${API_BASE}/leituras`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        karina: leiturasAtuais.karina,
+        david: leiturasAtuais.david
+      })
+    });
+
+    document.getElementById('leituraAnteriorKarinaSalva').textContent = leiturasAtuais.karina;
+    document.getElementById('leituraAnteriorDavidSalva').textContent = leiturasAtuais.david;
+    blocoInicial.classList.add('d-none');
+    blocoSalvo.classList.remove('d-none');
+  } catch {
+    alert('Erro ao salvar leituras anteriores no servidor.');
+  }
+
+  document.getElementById('blocoResultados').style.display = 'block';
+
+  // Salvar histórico para cada pessoa via API
+  try {
+    const pessoas = [
+      { nome: 'Karina', consumo: consumoKarina, valor: valorKarina },
+      { nome: 'David', consumo: consumoDavid, valor: valorDavid },
+      { nome: 'Tatiana', consumo: consumoTatiana, valor: valorTatiana }
+    ];
+
+    for (const p of pessoas) {
+      await fetch(`${API_BASE}/historico`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data: new Date().toLocaleString('pt-BR'),
+          nome: p.nome,
+          consumo: p.consumo,
+          valor: p.valor,
+          consumoTotal: fatura.consumoTotal,
+          valorTotal: fatura.valorTotal
+        })
+      });
+    }
+
+    // Atualiza histórico exibido
+    const resp = await fetch(`${API_BASE}/historico`);
+    const historicoAtualizado = await resp.json();
+    renderizarHistorico(historicoAtualizado);
+  } catch {
+    alert('Erro ao salvar histórico no servidor.');
+  }
+
+  desenharGrafico(consumoKarina, consumoDavid, consumoTatiana);
+}
+
+function renderizarHistorico(historico) {
+  const tabela = document.getElementById('tabelaHistorico');
+  tabela.innerHTML = '';
+
+  historico = historico || [];
+
+  for (let i = historico.length - 1; i >= 0; i--) {
+    const item = historico[i];
+    const linha = document.createElement('tr');
+    linha.innerHTML = `
+      <td>${item.data}</td>
+      <td>${item.nome}</td>
+      <td>${item.consumo.toFixed(2)}</td>
+      <td>${item.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+      <td>${item.consumoTotal.toFixed(2)}</td>
+      <td>${item.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+    `;
+    tabela.appendChild(linha);
+  }
+}
+
+function desenharGrafico(karina, david, tatiana) {
+  const ctx = document.getElementById('graficoConsumo').getContext('2d');
+  if (graficoConsumo) {
+    graficoConsumo.destroy();
+  }
+  graficoConsumo = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Karina', 'David', 'Tatiana'],
+      datasets: [{
+        label: 'Consumo (m³)',
+        data: [karina, david, tatiana],
+        backgroundColor: ['#0c6cfc', '#1c8454', '#ffc107'],
+        borderColor: '#dee2e6',
+        borderWidth: 1,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      animation: {
+        duration: 1000,
+        easing: 'easeOutBounce'
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Consumo (m³)'
+          },
+          ticks: {
+            precision: 0
+          },
+          grid: {
+            color: '#dee2e6'
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const valor = context.parsed.y;
+              return `${context.label}: ${valor.toFixed(2)} m³`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+
+function verificarSenha() {
+  const senha = senhaInput.value;
+  if (senha === SENHA_MESTRA) {
+    senhaInput.classList.remove('is-invalid');
+    senhaInput.classList.add('is-valid');
+    senhaModal.hide();
+    blocoInicial.classList.remove('d-none');
+    blocoSalvo.classList.add('d-none');
+  } else {
+    senhaInput.classList.add('is-invalid');
+  }
+}
+
+function exportarPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(18);
+  doc.setTextColor('#fd7e14');
+  doc.text('Histórico de Faturas - Conta de Luz', 14, 20);
+
+  // Busca histórico do backend para exportar (assíncrono)
+  fetch(`${API_BASE}/historico`)
+    .then(res => res.json())
+    .then(historico => {
+      if (historico.length === 0) {
+        alert('Não há histórico para exportar.');
+        return;
+      }
+
+      // Converte o canvas do gráfico para imagem PNG
+      const canvas = document.getElementById('graficoConsumo');
+      const imgData = canvas.toDataURL('image/png');
+
+      doc.addImage(imgData, 'PNG', 14, 30, 180, 80);
+
+      const startY = 30 + 80 + 10;
+
+      const colunas = ["Data", "Nome", "Consumo (kWh)", "Valor a Pagar (R$)", "Consumo Total", "Valor Total"];
+      const linhas = historico.map(item => [
+        item.data,
+        item.nome,
+        item.consumo.toFixed(2),
+        item.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+        item.consumoTotal.toFixed(2),
+        item.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+      ]);
+
+      doc.autoTable({
+        head: [colunas],
+        body: linhas,
+        startY: startY,
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [253, 126, 20] }
+      });
+
+      doc.save('historico_faturas_conta_luz.pdf');
+    })
+    .catch(() => {
+      alert('Erro ao buscar histórico para exportar.');
+    });
+}
+
+// Alternar tema claro/escuro
+const btnTema = document.getElementById('toggleTheme');
+btnTema.addEventListener('click', () => {
+  document.body.classList.toggle('dark-mode');
+  if (document.body.classList.contains('dark-mode')) {
+    btnTema.innerHTML = '<i class="bi bi-sun-fill"></i> Modo Claro';
+  } else {
+    btnTema.innerHTML = '<i class="bi bi-moon-fill"></i> Modo Escuro';
+  }
+});
+</script>
+</body>
+</html>
