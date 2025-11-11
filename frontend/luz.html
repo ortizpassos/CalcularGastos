@@ -155,8 +155,8 @@
               <div class="invalid-feedback">Campo inválido.</div>
             </div>
             <div class="col-md-6 mb-3">
-              <label for="leituraAnteriorDavidInicial" class="form-label">Leitura anterior David (kWh)</label>
-              <input type="number" class="form-control" id="leituraAnteriorDavidInicial" />
+              <label for="leituraAnteriorLuizaInicial" class="form-label">Leitura anterior Luiza (kWh)</label>
+              <input type="number" class="form-control" id="leituraAnteriorLuizaInicial" />
               <div class="invalid-feedback">Campo inválido.</div>
             </div>
           </div>
@@ -166,7 +166,7 @@
           <p><strong>Leituras anteriores salvas:</strong></p>
           <ul>
             <li>Karina: <strong id="leituraAnteriorKarinaSalva" class="text-warning"></strong> kWh</li>
-            <li>David: <strong id="leituraAnteriorDavidSalva" class="text-warning"></strong> kWh</li>
+            <li>Luiza: <strong id="leituraAnteriorLuizaSalva" class="text-warning"></strong> kWh</li>
           </ul>
           <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#senhaModal">
             Alterar Leituras Anteriores
@@ -184,8 +184,8 @@
               <div class="invalid-feedback">Campo inválido.</div>
             </div>
             <div class="col-md-6 mb-3">
-              <label for="leituraAtualDavid" class="form-label"><strong>Leitura atual David (kWh)</strong></label>
-              <input type="number" class="form-control" id="leituraAtualDavid" />
+              <label for="leituraAtualLuiza" class="form-label"><strong>Leitura atual Luiza (kWh)</strong></label>
+              <input type="number" class="form-control" id="leituraAtualLuiza" />
               <div class="invalid-feedback">Campo inválido.</div>
             </div>
           </div>
@@ -224,9 +224,9 @@
                 <td id="valorKarina"></td>
               </tr>
               <tr>
-                <td><i class="bi bi-person-circle text-warning"></i> David</td>
-                <td id="consumoDavid"></td>
-                <td id="valorDavid"></td>
+                <td><i class="bi bi-person-circle text-warning"></i> Luiza</td>
+                <td id="consumoLuiza"></td>
+                <td id="valorLuiza"></td>
               </tr>
               <tr>
                 <td><i class="bi bi-person-circle text-warning"></i> Tatiana</td>
@@ -311,9 +311,9 @@ window.onload = async function () {
     const respLeituras = await fetch(`${API_BASE}/leituras`);
     const leituras = await respLeituras.json();
 
-    if (leituras.karina !== undefined && leituras.david !== undefined) {
+  if (leituras.karina !== undefined && leituras.luiza !== undefined) {
       document.getElementById('leituraAnteriorKarinaSalva').textContent = leituras.karina;
-      document.getElementById('leituraAnteriorDavidSalva').textContent = leituras.david;
+  document.getElementById('leituraAnteriorLuizaSalva').textContent = leituras.luiza;
       blocoInicial.classList.add('d-none');
       blocoSalvo.classList.remove('d-none');
     } else {
@@ -335,15 +335,15 @@ window.onload = async function () {
 };
 
 function getLeituraAnterior() {
-  let karina, david;
+  let karina, luiza;
   if (blocoInicial.classList.contains('d-none')) {
     karina = parseFloat(document.getElementById('leituraAnteriorKarinaSalva').textContent);
-    david = parseFloat(document.getElementById('leituraAnteriorDavidSalva').textContent);
+  luiza = parseFloat(document.getElementById('leituraAnteriorLuizaSalva').textContent);
   } else {
     karina = parseFloat(document.getElementById('leituraAnteriorKarinaInicial').value);
-    david = parseFloat(document.getElementById('leituraAnteriorDavidInicial').value);
+  luiza = parseFloat(document.getElementById('leituraAnteriorLuizaInicial').value);
   }
-  return { karina, david };
+  return { karina, luiza };
 }
 
 function validarCampos(leiturasAnteriores, leiturasAtuais, fatura) {
@@ -367,19 +367,19 @@ function validarCampos(leiturasAnteriores, leiturasAtuais, fatura) {
 
   // Valida leituras anteriores
   const antKarina = !isNaN(leiturasAnteriores.karina);
-  const antDavid = !isNaN(leiturasAnteriores.david);
+  const antLuiza = !isNaN(leiturasAnteriores.luiza);
   marcarCampo('leituraAnteriorKarinaInicial', antKarina);
-  marcarCampo('leituraAnteriorDavidInicial', antDavid);
+  marcarCampo('leituraAnteriorLuizaInicial', antLuiza);
   if (!antKarina) mensagensErro.push('Leitura anterior de Karina inválida.');
-  if (!antDavid) mensagensErro.push('Leitura anterior de David inválida.');
+  if (!antLuiza) mensagensErro.push('Leitura anterior de Luiza inválida.');
 
   // Valida leituras atuais
   const atualKarina = !isNaN(leiturasAtuais.karina) && leiturasAtuais.karina >= leiturasAnteriores.karina;
-  const atualDavid = !isNaN(leiturasAtuais.david) && leiturasAtuais.david >= leiturasAnteriores.david;
+  const atualLuiza = !isNaN(leiturasAtuais.luiza) && leiturasAtuais.luiza >= leiturasAnteriores.luiza;
   marcarCampo('leituraAtualKarina', atualKarina);
-  marcarCampo('leituraAtualDavid', atualDavid);
+  marcarCampo('leituraAtualLuiza', atualLuiza);
   if (!atualKarina) mensagensErro.push('Leitura atual de Karina inválida ou menor que a anterior.');
-  if (!atualDavid) mensagensErro.push('Leitura atual de David inválida ou menor que a anterior.');
+  if (!atualLuiza) mensagensErro.push('Leitura atual de Luiza inválida ou menor que a anterior.');
 
   if (mensagensErro.length > 0) {
     alertaErro.innerHTML = mensagensErro.join('<br>');
@@ -395,8 +395,8 @@ function validarCampos(leiturasAnteriores, leiturasAtuais, fatura) {
 async function calcularFatura() {
   const leiturasAnteriores = getLeituraAnterior();
   const leiturasAtuais = {
-    karina: parseFloat(document.getElementById('leituraAtualKarina').value),
-    david: parseFloat(document.getElementById('leituraAtualDavid').value)
+  karina: parseFloat(document.getElementById('leituraAtualKarina').value),
+  luiza: parseFloat(document.getElementById('leituraAtualLuiza').value)
   };
   const fatura = {
     valorTotal: parseFloat(document.getElementById('valorTotalFatura').value),
@@ -409,20 +409,20 @@ async function calcularFatura() {
 
   const valorPorKwh = fatura.valorTotal / fatura.consumoTotal;
   const consumoKarina = leiturasAtuais.karina - leiturasAnteriores.karina;
-  const consumoDavid = leiturasAtuais.david - leiturasAnteriores.david;
-  const consumoTatiana = fatura.consumoTotal - (consumoKarina + consumoDavid);
+  const consumoLuiza = leiturasAtuais.luiza - leiturasAnteriores.luiza;
+  const consumoTatiana = fatura.consumoTotal - (consumoKarina + consumoLuiza);
 
   const valorKarina = consumoKarina * valorPorKwh;
-  const valorDavid = consumoDavid * valorPorKwh;
+  const valorLuiza = consumoLuiza * valorPorKwh;
   const valorTatiana = consumoTatiana * valorPorKwh;
 
   document.getElementById('consumoKarina').textContent = consumoKarina.toFixed(2);
-  document.getElementById('consumoDavid').textContent = consumoDavid.toFixed(2);
+  document.getElementById('consumoLuiza').textContent = consumoLuiza.toFixed(2);
   document.getElementById('consumoTatiana').textContent = consumoTatiana.toFixed(2);
   document.getElementById('consumoTotal').textContent = fatura.consumoTotal.toFixed(2);
 
   document.getElementById('valorKarina').textContent = valorKarina.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  document.getElementById('valorDavid').textContent = valorDavid.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  document.getElementById('valorLuiza').textContent = valorLuiza.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   document.getElementById('valorTatiana').textContent = valorTatiana.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   document.getElementById('valorTotal').textContent = fatura.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   document.getElementById('valorPorKwh').textContent = valorPorKwh.toFixed(4);
@@ -434,12 +434,12 @@ async function calcularFatura() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         karina: leiturasAtuais.karina,
-        david: leiturasAtuais.david
+  luiza: leiturasAtuais.luiza
       })
     });
 
     document.getElementById('leituraAnteriorKarinaSalva').textContent = leiturasAtuais.karina;
-    document.getElementById('leituraAnteriorDavidSalva').textContent = leiturasAtuais.david;
+  document.getElementById('leituraAnteriorLuizaSalva').textContent = leiturasAtuais.luiza;
     blocoInicial.classList.add('d-none');
     blocoSalvo.classList.remove('d-none');
   } catch {
@@ -452,7 +452,7 @@ async function calcularFatura() {
   try {
     const pessoas = [
       { nome: 'Karina', consumo: consumoKarina, valor: valorKarina },
-      { nome: 'David', consumo: consumoDavid, valor: valorDavid },
+  { nome: 'Luiza', consumo: consumoLuiza, valor: valorLuiza },
       { nome: 'Tatiana', consumo: consumoTatiana, valor: valorTatiana }
     ];
 

@@ -8,7 +8,7 @@ async function init() {
       id INT AUTO_INCREMENT PRIMARY KEY,
       tipo ENUM('luz','agua') NOT NULL,
       karina DECIMAL(10,2) NOT NULL,
-      david DECIMAL(10,2) NOT NULL,
+  luiza DECIMAL(10,2) NOT NULL,
       data DATETIME DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB;
   `;
