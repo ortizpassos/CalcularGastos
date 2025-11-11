@@ -508,14 +508,19 @@ function renderizarHistorico(historico) {
 
   for (let i = historico.length - 1; i >= 0; i--) {
     const item = historico[i];
+    // Garante que os campos numéricos são tratados como número
+    const consumo = Number(item.consumo);
+    const valor = Number(item.valor);
+    const consumoTotal = Number(item.consumoTotal ?? 0);
+    const valorTotal = Number(item.valorTotal ?? 0);
     const linha = document.createElement('tr');
     linha.innerHTML = `
       <td>${item.data}</td>
       <td>${item.nome}</td>
-      <td>${item.consumo.toFixed(2)}</td>
-      <td>${item.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-      <td>${item.consumoTotal.toFixed(2)}</td>
-      <td>${item.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+      <td>${isNaN(consumo) ? '' : consumo.toFixed(2)}</td>
+      <td>${isNaN(valor) ? '' : valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+      <td>${isNaN(consumoTotal) ? '' : consumoTotal.toFixed(2)}</td>
+      <td>${isNaN(valorTotal) ? '' : valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
     `;
     tabela.appendChild(linha);
   }
