@@ -474,26 +474,27 @@ async function calcularFatura() {
     ];
 
     for (const p of pessoas) {
-      await fetch(`${API_BASE}/historico`, {
+      const resp = await fetch(`${API_BASE}/historico`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          data: new Date().toLocaleString('pt-BR'),
           nome: p.nome,
           consumo: p.consumo,
-          valor: p.valor,
-          consumoTotal: fatura.consumoTotal,
-          valorTotal: fatura.valorTotal
+          valor: p.valor
         })
       });
+      if (!resp.ok) {
+        throw new Error('Erro ao salvar histórico: ' + resp.status);
+      }
     }
 
     // Atualiza histórico exibido
     const resp = await fetch(`${API_BASE}/historico`);
     const historicoAtualizado = await resp.json();
     renderizarHistorico(historicoAtualizado);
-  } catch {
+  } catch (err) {
     alert('Erro ao salvar histórico no servidor.');
+    console.error(err);
   }
 
   desenharGrafico(consumoKarina, consumoDavid, consumoTatiana);
