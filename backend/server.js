@@ -1,3 +1,7 @@
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const JWT_SECRET = process.env.JWT_SECRET || 'segredo_super_secreto';
+
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -17,47 +21,34 @@ const ARQUIVO_HISTORICO_LUZ = path.join(__dirname, 'historico_luz.json');
 const ARQUIVO_LEITURAS_AGUA = path.join(__dirname, 'leituras_agua.json');
 const ARQUIVO_HISTORICO_AGUA = path.join(__dirname, 'historico_agua.json');
 
-// Banco de dados MySQL
-const db = require('./db');
+// Banco de dados MongoDB
+const mongo = require('./mongo');
 
-// Funções auxiliares para ler e salvar JSON
-app.post('/api/:tipo/resultado', async (req, res) => {
-  const { tipo } = req.params;
-  if (tipo !== 'luz' && tipo !== 'agua') {
-    return res.status(400).json({ erro: 'Tipo inválido' });
-  }
-  const resultado = req.body;
-  if (!resultado || typeof resultado !== 'object') {
-    return res.status(400).json({ erro: 'Resultado inválido' });
-  }
+// Middleware de autenticação JWT
+function autenticarJWT(req, res, next) {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ erro: 'Token não fornecido.' });
+  const token = auth.split(' ')[1];
   try {
-    await db.query(
-      "INSERT INTO resultados (tipo, resultado) VALUES (?, ?)",
-      [tipo, JSON.stringify(resultado)]
-    );
-    res.json({ mensagem: 'Resultado salvo com sucesso' });
-  } catch (err) {
-    console.error('Erro ao salvar resultado:', err);
-    res.status(500).json({ erro: 'Erro ao salvar resultado no banco de dados' });
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.usuario = payload;
+    next();
+  } catch {
+    return res.status(401).json({ erro: 'Token inválido ou expirado.' });
   }
-});
+}
 function lerArquivo(filePath) {
   try {
-app.get('/api/:tipo/resultado', async (req, res) => {
+app.get('/api/:tipo/resultado', autenticarJWT, async (req, res) => {
   const { tipo } = req.params;
   if (tipo !== 'luz' && tipo !== 'agua') {
     return res.status(400).json({ erro: 'Tipo inválido' });
   }
   try {
-    const [rows] = await db.query(
-      "SELECT resultado, data FROM resultados WHERE tipo = ? ORDER BY data DESC, id DESC LIMIT 1",
-      [tipo]
-    );
-    if (rows.length === 0) {
-      return res.json({ resultado: null, data: null });
-    }
-    // resultado é JSON em string
-    res.json({ resultado: JSON.parse(rows[0].resultado), data: rows[0].data });
+    const db = mongo.getDb();
+    const doc = await db.collection('resultados').find({ tipo, usuario: req.usuario.email }).sort({ data: -1 }).limit(1).toArray();
+    if (!doc || doc.length === 0) return res.json({ resultado: null, data: null });
+    res.json({ resultado: doc[0].resultado, data: doc[0].data });
   } catch (err) {
     console.error('Erro ao buscar resultado:', err);
     res.status(500).json({ erro: 'Erro ao buscar resultado no banco de dados' });
@@ -83,65 +74,104 @@ function salvarArquivo(filePath, dados) {
 }
 
 // --- ROTAS LUZ ---
+// --- ROTAS AUTENTICAÇÃO ---
+app.post('/api/login', async (req, res) => {
+  const { email, senha } = req.body;
+  if (!email || !senha) return res.status(400).json({ erro: 'E-mail e senha obrigatórios.' });
+  try {
+    const db = mongo.getDb();
+    const usuario = await db.collection('usuarios').findOne({ email });
+    if (!usuario) return res.status(401).json({ erro: 'Usuário ou senha inválidos.' });
+    const ok = await bcrypt.compare(senha, usuario.senha);
+    if (!ok) return res.status(401).json({ erro: 'Usuário ou senha inválidos.' });
+    const token = jwt.sign({ email: usuario.email }, JWT_SECRET, { expiresIn: '12h' });
+    res.json({ token });
+  } catch (err) {
+    console.error('Erro ao fazer login:', err);
+    res.status(500).json({ erro: 'Erro ao fazer login' });
+  }
+});
+app.post('/api/cadastro', async (req, res) => {
+  const { email, senha } = req.body;
+  if (!email || !senha) return res.status(400).json({ erro: 'E-mail e senha obrigatórios.' });
+  try {
+    const db = mongo.getDb();
+    const existente = await db.collection('usuarios').findOne({ email });
+    if (existente) return res.status(400).json({ erro: 'E-mail já cadastrado.' });
+    const hash = await bcrypt.hash(senha, 10);
+    await db.collection('usuarios').insertOne({ email, senha: hash });
+    res.json({ mensagem: 'Usuário cadastrado com sucesso' });
+  } catch (err) {
+    console.error('Erro ao cadastrar usuário:', err);
+    res.status(500).json({ erro: 'Erro ao cadastrar usuário' });
+  }
+});
 
 // Leituras anteriores luz (GET/POST) - tabela unificada
-app.get('/api/luz/leituras', async (req, res) => {
+app.get('/api/luz/leituras', autenticarJWT, async (req, res) => {
   try {
-    const [rows] = await db.query(
-      "SELECT karina, david, data FROM leituras WHERE tipo = 'luz' ORDER BY data DESC, id DESC LIMIT 1"
-    );
-    if (rows.length === 0) {
-      return res.json({ karina: null, david: null, data: null });
-    }
-    res.json(rows[0]);
+    const db = mongo.getDb();
+    const docs = await db.collection('leituras').find({ tipo: 'luz', usuario: req.usuario.email }).sort({ data: -1 }).limit(1).toArray();
+    if (!docs || docs.length === 0) return res.json({ karina: 0, luiza: 0, data: null });
+    const d = docs[0];
+    res.json({ karina: d.karina, luiza: d.luiza, data: d.data });
   } catch (err) {
     console.error('Erro ao buscar leituras luz:', err);
     res.status(500).json({ erro: 'Erro ao buscar leituras luz do banco de dados' });
   }
 });
 
-app.post('/api/luz/leituras', async (req, res) => {
-  const { karina, david } = req.body;
-  if (typeof karina !== 'number' || typeof david !== 'number') {
-    return res.status(400).json({ erro: 'Dados inválidos: karina e david devem ser números' });
+app.post('/api/luz/leituras', autenticarJWT, async (req, res) => {
+  const { karina, luiza, data } = req.body;
+  if (typeof karina !== 'number' || typeof luiza !== 'number') {
+    return res.status(400).json({ erro: 'Dados inválidos: karina e luiza devem ser números' });
   }
   try {
-    await db.query(
-      "INSERT INTO leituras (tipo, karina, david) VALUES ('luz', ?, ?)",
-      [karina, david]
-    );
+    const db = mongo.getDb();
+    await db.collection('leituras').insertOne({ tipo: 'luz', usuario: req.usuario.email, karina, luiza, data: data ? new Date(data) : new Date() });
     res.json({ mensagem: 'Leituras anteriores luz salvas com sucesso' });
   } catch (err) {
     console.error('Erro ao salvar leituras luz:', err);
     res.status(500).json({ erro: 'Erro ao salvar leituras luz no banco de dados' });
   }
 });
-// Leituras anteriores agua (GET/POST) - tabela unificada
-app.get('/api/agua/leituras', async (req, res) => {
+app.get('/api/agua/leituras', autenticarJWT, async (req, res) => {
   try {
-    const [rows] = await db.query(
-      "SELECT karina, david, data FROM leituras WHERE tipo = 'agua' ORDER BY data DESC, id DESC LIMIT 1"
-    );
-    if (rows.length === 0) {
-      return res.json({ karina: null, david: null, data: null });
-    }
-    res.json(rows[0]);
+    const db = mongo.getDb();
+    const docs = await db.collection('leituras').find({ tipo: 'agua', usuario: req.usuario.email }).sort({ data: -1 }).limit(1).toArray();
+    if (!docs || docs.length === 0) return res.json({ karina: 0, luiza: 0, data: null });
+    const d = docs[0];
+    res.json({ karina: d.karina, luiza: d.luiza, data: d.data });
   } catch (err) {
     console.error('Erro ao buscar leituras agua:', err);
     res.status(500).json({ erro: 'Erro ao buscar leituras agua do banco de dados' });
   }
 });
+// Rota para checar senha do usuário autenticado
+app.post('/api/usuario/verificar-senha', autenticarJWT, async (req, res) => {
+  const { senha } = req.body;
+  if (!senha) return res.status(400).json({ erro: 'Senha obrigatória.' });
+  try {
+    const db = mongo.getDb();
+    const usuario = await db.collection('usuarios').findOne({ email: req.usuario.email });
+    if (!usuario) return res.status(401).json({ erro: 'Usuário não encontrado.' });
+    const ok = await bcrypt.compare(senha, usuario.senha);
+    if (!ok) return res.status(401).json({ erro: 'Senha incorreta.' });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Erro ao verificar senha:', err);
+    res.status(500).json({ erro: 'Erro ao verificar senha' });
+  }
+});
 
-app.post('/api/agua/leituras', async (req, res) => {
-  const { karina, david } = req.body;
-  if (typeof karina !== 'number' || typeof david !== 'number') {
-    return res.status(400).json({ erro: 'Dados inválidos: karina e david devem ser números' });
+app.post('/api/agua/leituras', autenticarJWT, async (req, res) => {
+  const { karina, luiza, data } = req.body;
+  if (typeof karina !== 'number' || typeof luiza !== 'number') {
+    return res.status(400).json({ erro: 'Dados inválidos: karina e luiza devem ser números' });
   }
   try {
-    await db.query(
-      "INSERT INTO leituras (tipo, karina, david) VALUES ('agua', ?, ?)",
-      [karina, david]
-    );
+    const db = mongo.getDb();
+    await db.collection('leituras').insertOne({ tipo: 'agua', usuario: req.usuario.email, karina, luiza, data: data ? new Date(data) : new Date() });
     res.json({ mensagem: 'Leituras anteriores agua salvas com sucesso' });
   } catch (err) {
     console.error('Erro ao salvar leituras agua:', err);
@@ -149,12 +179,10 @@ app.post('/api/agua/leituras', async (req, res) => {
   }
 });
 
-// 3. Histórico luz (GET) - agora via MySQL
-app.get('/api/luz/historico', async (req, res) => {
+app.get('/api/luz/historico', autenticarJWT, async (req, res) => {
   try {
-    const [rows] = await db.query(
-      "SELECT nome, consumo, valor, data FROM historicos WHERE tipo = 'luz' ORDER BY data DESC, id DESC LIMIT 100"
-    );
+    const db = mongo.getDb();
+    const rows = await db.collection('historicos').find({ tipo: 'luz', usuario: req.usuario.email }).sort({ data: -1 }).limit(100).toArray();
     res.json(rows);
   } catch (err) {
     console.error('Erro ao buscar histórico luz:', err);
@@ -163,16 +191,23 @@ app.get('/api/luz/historico', async (req, res) => {
 });
 
 // 4. Adicionar ao histórico luz (POST) - agora via MySQL
-app.post('/api/luz/historico', async (req, res) => {
+app.post('/api/luz/historico', autenticarJWT, async (req, res) => {
   const entrada = req.body;
   if (!entrada || !entrada.nome || typeof entrada.consumo !== 'number' || typeof entrada.valor !== 'number') {
     return res.status(400).json({ erro: 'Dados de histórico inválidos' });
   }
   try {
-    await db.query(
-      "INSERT INTO historicos (tipo, nome, consumo, valor) VALUES ('luz', ?, ?, ?)",
-      [entrada.nome, entrada.consumo, entrada.valor]
-    );
+    const db = mongo.getDb();
+    await db.collection('historicos').insertOne({
+      tipo: 'luz',
+      usuario: req.usuario.email,
+      nome: entrada.nome,
+      consumo: entrada.consumo,
+      valor: entrada.valor,
+      data: entrada.data ? new Date(entrada.data) : new Date(),
+      consumoTotal: typeof entrada.consumoTotal === 'number' ? entrada.consumoTotal : undefined,
+      valorTotal: typeof entrada.valorTotal === 'number' ? entrada.valorTotal : undefined
+    });
     res.json({ mensagem: 'Entrada adicionada ao histórico luz' });
   } catch (err) {
     console.error('Erro ao salvar histórico luz:', err);
@@ -198,12 +233,10 @@ app.post('/api/agua/leituras', (req, res) => {
   res.json({ mensagem: 'Leituras anteriores água salvas com sucesso' });
 });
 
-// 3. Histórico agua (GET) - agora via MySQL
-app.get('/api/agua/historico', async (req, res) => {
+app.get('/api/agua/historico', autenticarJWT, async (req, res) => {
   try {
-    const [rows] = await db.query(
-      "SELECT nome, consumo, valor, data FROM historicos WHERE tipo = 'agua' ORDER BY data DESC, id DESC LIMIT 100"
-    );
+    const db = mongo.getDb();
+    const rows = await db.collection('historicos').find({ tipo: 'agua', usuario: req.usuario.email }).sort({ data: -1 }).limit(100).toArray();
     res.json(rows);
   } catch (err) {
     console.error('Erro ao buscar histórico agua:', err);
@@ -212,20 +245,60 @@ app.get('/api/agua/historico', async (req, res) => {
 });
 
 // 4. Adicionar ao histórico agua (POST) - agora via MySQL
-app.post('/api/agua/historico', async (req, res) => {
+app.post('/api/agua/historico', autenticarJWT, async (req, res) => {
   const entrada = req.body;
   if (!entrada || !entrada.nome || typeof entrada.consumo !== 'number' || typeof entrada.valor !== 'number') {
     return res.status(400).json({ erro: 'Dados de histórico inválidos' });
   }
   try {
-    await db.query(
-      "INSERT INTO historicos (tipo, nome, consumo, valor) VALUES ('agua', ?, ?, ?)",
-      [entrada.nome, entrada.consumo, entrada.valor]
-    );
+    const db = mongo.getDb();
+    await db.collection('historicos').insertOne({
+      tipo: 'agua',
+      usuario: req.usuario.email,
+      nome: entrada.nome,
+      consumo: entrada.consumo,
+      valor: entrada.valor,
+      data: entrada.data ? new Date(entrada.data) : new Date(),
+      consumoTotal: typeof entrada.consumoTotal === 'number' ? entrada.consumoTotal : undefined,
+      valorTotal: typeof entrada.valorTotal === 'number' ? entrada.valorTotal : undefined
+    });
     res.json({ mensagem: 'Entrada adicionada ao histórico água' });
   } catch (err) {
     console.error('Erro ao salvar histórico agua:', err);
     res.status(500).json({ erro: 'Erro ao salvar histórico agua no banco de dados' });
+  }
+});
+
+// --- RESULTADO (LUZ E ÁGUA) ---
+app.post('/api/:tipo/resultado', autenticarJWT, async (req, res) => {
+  const { tipo } = req.params;
+  const { resultado } = req.body;
+  if ((tipo !== 'luz' && tipo !== 'agua') || typeof resultado !== 'number') {
+    return res.status(400).json({ erro: 'Tipo ou resultado inválido' });
+  }
+  try {
+    const db = mongo.getDb();
+    await db.collection('resultados').insertOne({ tipo, usuario: req.usuario.email, resultado, data: new Date() });
+    res.json({ mensagem: 'Resultado salvo com sucesso' });
+  } catch (err) {
+    console.error('Erro ao salvar resultado:', err);
+    res.status(500).json({ erro: 'Erro ao salvar resultado no banco de dados' });
+  }
+});
+
+app.get('/api/:tipo/resultado', autenticarJWT, async (req, res) => {
+  const { tipo } = req.params;
+  if (tipo !== 'luz' && tipo !== 'agua') {
+    return res.status(400).json({ erro: 'Tipo inválido' });
+  }
+  try {
+    const db = mongo.getDb();
+    const doc = await db.collection('resultados').find({ tipo, usuario: req.usuario.email }).sort({ data: -1 }).limit(1).toArray();
+    if (!doc || doc.length === 0) return res.json({ resultado: null, data: null });
+    res.json({ resultado: doc[0].resultado, data: doc[0].data });
+  } catch (err) {
+    console.error('Erro ao buscar resultado:', err);
+    res.status(500).json({ erro: 'Erro ao buscar resultado no banco de dados' });
   }
 });
 
@@ -246,7 +319,12 @@ app.get('/api/tuya/devices', async (req, res) => {
   }
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+// Iniciar servidor apenas após conectar ao MongoDB
+mongo.connect().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando em http://localhost:${PORT}`);
+  });
+}).catch(err => {
+  console.error('Falha ao conectar no MongoDB:', err);
+  process.exit(1);
 });

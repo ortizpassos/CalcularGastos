@@ -8,95 +8,92 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
   <style>
-    body {
-      background-color: #f0f2f5;
+    input:focus::placeholder {
+      color: #000 !important;
+      opacity: 1;
     }
-
+    ::placeholder {
+      color: #fff !important;
+      opacity: 1;
+    }
+    :-ms-input-placeholder { color: #fff !important; }
+    ::-ms-input-placeholder { color: #fff !important; }
+    body {
+      background: linear-gradient(to bottom right, #1e1e1e, #121212);
+      color: #f8f9fa;
+      min-height: 100vh;
+    }
     .container {
       max-width: 800px;
       padding: 1rem;
     }
-
-    #blocoResultados {
-      display: none;
+    .card {
+      background: rgba(30,30,30,0.97);
+      color: #f8f9fa;
+      border-radius: 18px;
+      box-shadow: 0 0 24px #0008;
+      border: none;
     }
-
-    .card-header {
-      font-weight: bold;
+    .card-title {
+      font-size: 2rem;
+      color: #fd7e14;
+      letter-spacing: 1px;
     }
-
-    .result-table th {
-      background-color: #fd7e14; /* laranja bootstrap */
-      color: white;
+    .btn, .btn-lg, .btn-sm {
+      border-radius: 12px !important;
+      font-size: 1.1rem;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-
-    @media (max-width: 576px) {
-      h1.card-title {
-        font-size: 1.4rem;
-        text-align: center;
-      }
-
-      .form-label {
-        font-size: 0.9rem;
-      }
-
-      .table thead {
-        font-size: 0.85rem;
-      }
-
-      .table tbody {
-        font-size: 0.85rem;
-      }
-
-      canvas#graficoConsumo {
-        max-width: 100% !important;
-        height: auto !important;
-      }
+    .btn:hover {
+      transform: scale(1.04);
+      box-shadow: 0 0 10px #fd7e1444;
     }
-
-    body.dark-mode {
-      background-color: #121212;
-      color: #e0e0e0;
-    }
-
-    body.dark-mode .card {
-      background-color: #1e1e1e;
-      color: #e0e0e0;
-      border: 1px solid #333;
-    }
-
-    body.dark-mode .form-control,
-    body.dark-mode .btn,
-    body.dark-mode .modal-content,
-    body.dark-mode .table {
-      background-color: #2c2c2c;
-      color: #e0e0e0;
+    .btn-outline-dark, .btn-outline-primary, .btn-outline-secondary {
+      color: #f8f9fa;
       border-color: #444;
     }
-
-    body.dark-mode .result-table th {
-      background-color: #5a3d00 !important; /* tom mais escuro de laranja */
+    .btn-outline-dark:hover {
+      background: #222;
       color: #fff;
     }
-
-    body.dark-mode .btn-outline-secondary,
-    body.dark-mode .btn-outline-primary,
-    body.dark-mode .btn-outline-dark {
-      border-color: #aaa;
-      color: #e0e0e0;
+    .result-table th {
+      background-color: #fd7e14;
+      color: white;
     }
-
-    body.dark-mode .btn-outline-dark:hover {
-      background-color: #444;
-      color: #fff;
+    .form-control {
+      border-radius: 10px;
+      background: #232323;
+      color: #f8f9fa;
+      border: 1px solid #444;
+    }
+    .form-control:focus {
+      border-color: #fd7e14;
+      box-shadow: 0 0 0 0.2rem #fd7e1433;
+    }
+    .alert {
+      border-radius: 10px;
+    }
+    @media (max-width: 576px) {
+      .card-title {
+        font-size: 1.4rem;
+      }
+      .btn, .btn-lg, .btn-sm {
+        font-size: 1rem;
+        padding: 12px;
+      }
     }
   </style>
 </head>
 <body>
+<script>
+  if (!localStorage.getItem('token')) {
+    window.location.href = 'login.html';
+  }
+</script>
 
   <div class="container text-end mt-3">
-    <button id="toggleTheme" class="btn btn-outline-dark btn-sm">
-      <i class="bi bi-moon-fill"></i> Modo Escuro
+    <button id="btnSair" class="btn btn-danger btn-sm">
+      <i class="bi bi-box-arrow-right"></i> Sair
     </button>
   </div>
 
@@ -150,12 +147,12 @@
           <p>Por favor, insira as leituras anteriores para o primeiro cálculo.</p>
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label for="leituraAnteriorKarinaInicial" class="form-label">Leitura anterior Karina (kWh)</label>
+              <label id="labelLeituraAnterior1" for="leituraAnteriorKarinaInicial" class="form-label">Leitura anterior (kWh)</label>
               <input type="number" class="form-control" id="leituraAnteriorKarinaInicial" />
               <div class="invalid-feedback">Campo inválido.</div>
             </div>
             <div class="col-md-6 mb-3">
-              <label for="leituraAnteriorLuizaInicial" class="form-label">Leitura anterior Luiza (kWh)</label>
+              <label id="labelLeituraAnterior2" for="leituraAnteriorLuizaInicial" class="form-label">Leitura anterior (kWh)</label>
               <input type="number" class="form-control" id="leituraAnteriorLuizaInicial" />
               <div class="invalid-feedback">Campo inválido.</div>
             </div>
@@ -165,8 +162,8 @@
         <div id="blocoLeituraAnteriorSalva" class="d-none">
           <p><strong>Leituras anteriores salvas:</strong></p>
           <ul>
-            <li>Karina: <strong id="leituraAnteriorKarinaSalva" class="text-warning"></strong> kWh</li>
-            <li>Luiza: <strong id="leituraAnteriorLuizaSalva" class="text-warning"></strong> kWh</li>
+            <li><span id="labelLeituraSalva1">Pessoa 1</span>: <strong id="leituraAnteriorKarinaSalva" class="text-warning"></strong> kWh</li>
+            <li><span id="labelLeituraSalva2">Pessoa 2</span>: <strong id="leituraAnteriorLuizaSalva" class="text-warning"></strong> kWh</li>
           </ul>
           <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#senhaModal">
             Alterar Leituras Anteriores
@@ -179,12 +176,12 @@
           <h5 class="mb-3">Leituras Atuais</h5>
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label for="leituraAtualKarina" class="form-label"><strong>Leitura atual Karina (kWh)</strong></label>
+              <label id="labelLeituraAtual1" for="leituraAtualKarina" class="form-label"><strong>Leitura atual (kWh)</strong></label>
               <input type="number" class="form-control" id="leituraAtualKarina" />
               <div class="invalid-feedback">Campo inválido.</div>
             </div>
             <div class="col-md-6 mb-3">
-              <label for="leituraAtualLuiza" class="form-label"><strong>Leitura atual Luiza (kWh)</strong></label>
+              <label id="labelLeituraAtual2" for="leituraAtualLuiza" class="form-label"><strong>Leitura atual (kWh)</strong></label>
               <input type="number" class="form-control" id="leituraAtualLuiza" />
               <div class="invalid-feedback">Campo inválido.</div>
             </div>
@@ -219,17 +216,17 @@
             </thead>
             <tbody>
               <tr>
-                <td><i class="bi bi-person-circle text-warning"></i> Karina</td>
+                <td><i class="bi bi-person-circle text-warning"></i> <span id="labelNome1">Pessoa 1</span></td>
                 <td id="consumoKarina"></td>
                 <td id="valorKarina"></td>
               </tr>
               <tr>
-                <td><i class="bi bi-person-circle text-warning"></i> Luiza</td>
+                <td><i class="bi bi-person-circle text-warning"></i> <span id="labelNome2">Pessoa 2</span></td>
                 <td id="consumoLuiza"></td>
                 <td id="valorLuiza"></td>
               </tr>
               <tr>
-                <td><i class="bi bi-person-circle text-warning"></i> Tatiana</td>
+                <td><i class="bi bi-person-circle text-warning"></i> <span id="labelNome3">Pessoa 3</span></td>
                 <td id="consumoTatiana"></td>
                 <td id="valorTatiana"></td>
               </tr>
@@ -294,8 +291,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
-  <script>
-    const SENHA_MESTRA = '1989';
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+// Senha mestra removida. Agora usa senha do usuário cadastrado.
 
 let graficoConsumo = null;
 const blocoInicial = document.getElementById('blocoLeituraAnteriorInicial');
@@ -304,16 +304,22 @@ const senhaInput = document.getElementById('senhaInput');
 const modalElement = document.getElementById('senhaModal');
 const senhaModal = new bootstrap.Modal(modalElement);
 
-const API_BASE = 'https://calculargastos.onrender.com/api/luz'; // Ajuste URL se necessário
+const API_BASE =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000/api/luz'
+    : 'https://calculargastos.onrender.com/api/luz'; // Ajuste URL se necessário
 
 window.onload = async function () {
   try {
-    const respLeituras = await fetch(`${API_BASE}/leituras`);
+    const token = localStorage.getItem('token');
+    const respLeituras = await fetch(`${API_BASE}/leituras`, {
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+    });
     const leituras = await respLeituras.json();
 
-  if (leituras.karina !== undefined && leituras.luiza !== undefined) {
+    if (leituras.karina !== undefined && leituras.luiza !== undefined) {
       document.getElementById('leituraAnteriorKarinaSalva').textContent = leituras.karina;
-  document.getElementById('leituraAnteriorLuizaSalva').textContent = leituras.luiza;
+      document.getElementById('leituraAnteriorLuizaSalva').textContent = leituras.luiza;
       blocoInicial.classList.add('d-none');
       blocoSalvo.classList.remove('d-none');
     } else {
@@ -326,7 +332,10 @@ window.onload = async function () {
   }
 
   try {
-    const respHistorico = await fetch(`${API_BASE}/historico`);
+    const token = localStorage.getItem('token');
+    const respHistorico = await fetch(`${API_BASE}/historico`, {
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+    });
     const historico = await respHistorico.json();
     renderizarHistorico(historico);
   } catch {
@@ -338,10 +347,10 @@ function getLeituraAnterior() {
   let karina, luiza;
   if (blocoInicial.classList.contains('d-none')) {
     karina = parseFloat(document.getElementById('leituraAnteriorKarinaSalva').textContent);
-  luiza = parseFloat(document.getElementById('leituraAnteriorLuizaSalva').textContent);
+    luiza = parseFloat(document.getElementById('leituraAnteriorLuizaSalva').textContent);
   } else {
     karina = parseFloat(document.getElementById('leituraAnteriorKarinaInicial').value);
-  luiza = parseFloat(document.getElementById('leituraAnteriorLuizaInicial').value);
+    luiza = parseFloat(document.getElementById('leituraAnteriorLuizaInicial').value);
   }
   return { karina, luiza };
 }
@@ -393,10 +402,17 @@ function validarCampos(leiturasAnteriores, leiturasAtuais, fatura) {
 }
 
 async function calcularFatura() {
+  const token = localStorage.getItem('token');
+  const alertaErro = document.getElementById('alertaErro');
+  if (alertaErro) {
+    alertaErro.classList.add('d-none');
+    alertaErro.textContent = '';
+  }
+
   const leiturasAnteriores = getLeituraAnterior();
   const leiturasAtuais = {
-  karina: parseFloat(document.getElementById('leituraAtualKarina').value),
-  luiza: parseFloat(document.getElementById('leituraAtualLuiza').value)
+    karina: parseFloat(document.getElementById('leituraAtualKarina').value),
+    luiza: parseFloat(document.getElementById('leituraAtualLuiza').value)
   };
   const fatura = {
     valorTotal: parseFloat(document.getElementById('valorTotalFatura').value),
@@ -429,17 +445,22 @@ async function calcularFatura() {
 
   // Salvar leituras anteriores via API
   try {
+    const payload = {
+      karina: leiturasAtuais.karina,
+      luiza: leiturasAtuais.luiza,
+      data: new Date().toLocaleString('pt-BR')
+    };
     await fetch(`${API_BASE}/leituras`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        karina: leiturasAtuais.karina,
-  luiza: leiturasAtuais.luiza
-      })
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+      },
+      body: JSON.stringify(payload)
     });
 
     document.getElementById('leituraAnteriorKarinaSalva').textContent = leiturasAtuais.karina;
-  document.getElementById('leituraAnteriorLuizaSalva').textContent = leiturasAtuais.luiza;
+    document.getElementById('leituraAnteriorLuizaSalva').textContent = leiturasAtuais.luiza;
     blocoInicial.classList.add('d-none');
     blocoSalvo.classList.remove('d-none');
   } catch {
@@ -452,34 +473,56 @@ async function calcularFatura() {
   try {
     const pessoas = [
       { nome: 'Karina', consumo: consumoKarina, valor: valorKarina },
-  { nome: 'Luiza', consumo: consumoLuiza, valor: valorLuiza },
+      { nome: 'Luiza', consumo: consumoLuiza, valor: valorLuiza },
       { nome: 'Tatiana', consumo: consumoTatiana, valor: valorTatiana }
     ];
 
     for (const p of pessoas) {
-      await fetch(`${API_BASE}/historico`, {
+      const payload = {
+        data: new Date().toLocaleString('pt-BR'),
+        nome: p.nome,
+        consumo: p.consumo,
+        valor: p.valor,
+        consumoTotal: fatura.consumoTotal,
+        valorTotal: fatura.valorTotal
+      };
+      console.log('Enviando histórico:', payload);
+      const resp = await fetch(`${API_BASE}/historico`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          data: new Date().toLocaleString('pt-BR'),
-          nome: p.nome,
-          consumo: p.consumo,
-          valor: p.valor,
-          consumoTotal: fatura.consumoTotal,
-          valorTotal: fatura.valorTotal
-        })
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+        },
+        body: JSON.stringify(payload)
       });
+      if (!resp.ok) {
+        const erro = await resp.json().catch(() => ({}));
+        console.error('Erro ao salvar histórico:', erro);
+        alert('Erro ao salvar histórico: ' + (erro.erro || resp.status));
+      }
     }
 
     // Atualiza histórico exibido
-    const resp = await fetch(`${API_BASE}/historico`);
+    const resp = await fetch(`${API_BASE}/historico`, {
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+    });
     const historicoAtualizado = await resp.json();
     renderizarHistorico(historicoAtualizado);
+    if (alertaErro) {
+      alertaErro.classList.add('d-none');
+      alertaErro.textContent = '';
+    }
+
   } catch {
-    alert('Erro ao salvar histórico no servidor.');
+    if (alertaErro) {
+      alertaErro.textContent = 'Erro ao salvar histórico no servidor.';
+      alertaErro.classList.remove('d-none');
+    } else {
+      alert('Erro ao salvar histórico no servidor.');
+    }
   }
 
-  desenharGrafico(consumoKarina, consumoDavid, consumoTatiana);
+  desenharGrafico(consumoKarina, consumoLuiza, consumoTatiana);
 }
 
 function renderizarHistorico(historico) {
@@ -488,33 +531,45 @@ function renderizarHistorico(historico) {
 
   historico = historico || [];
 
+  // Nomes dinâmicos para histórico
+  const nomes = getNomesDinamicos();
   for (let i = historico.length - 1; i >= 0; i--) {
     const item = historico[i];
+    // Garante que os campos numéricos são tratados como número
+    const consumo = Number(item.consumo);
+    const valor = Number(item.valor);
+    const consumoTotal = Number(item.consumoTotal ?? 0);
+    const valorTotal = Number(item.valorTotal ?? 0);
+    let nomeExibido = item.nome;
+    if (item.nome === 'Karina') nomeExibido = nomes[0];
+    else if (item.nome === 'Luiza') nomeExibido = nomes[1];
+    else if (item.nome === 'Tatiana') nomeExibido = nomes[2];
     const linha = document.createElement('tr');
     linha.innerHTML = `
       <td>${item.data}</td>
-      <td>${item.nome}</td>
-      <td>${item.consumo.toFixed(2)}</td>
-      <td>${item.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-      <td>${item.consumoTotal.toFixed(2)}</td>
-      <td>${item.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+      <td>${nomeExibido}</td>
+      <td>${isNaN(consumo) ? '' : consumo.toFixed(2)}</td>
+      <td>${isNaN(valor) ? '' : valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+      <td>${isNaN(consumoTotal) ? '' : consumoTotal.toFixed(2)}</td>
+      <td>${isNaN(valorTotal) ? '' : valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
     `;
     tabela.appendChild(linha);
   }
 }
 
-function desenharGrafico(karina, david, tatiana) {
+function desenharGrafico(karina, luiza, tatiana) {
   const ctx = document.getElementById('graficoConsumo').getContext('2d');
+  const nomes = getNomesDinamicos();
   if (graficoConsumo) {
     graficoConsumo.destroy();
   }
   graficoConsumo = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ['Karina', 'David', 'Tatiana'],
+      labels: nomes,
       datasets: [{
-        label: 'Consumo (m³)',
-        data: [karina, david, tatiana],
+        label: 'Consumo (kWh)',
+        data: [karina, luiza, tatiana],
         backgroundColor: ['#0c6cfc', '#1c8454', '#ffc107'],
         borderColor: '#dee2e6',
         borderWidth: 1,
@@ -532,7 +587,7 @@ function desenharGrafico(karina, david, tatiana) {
           beginAtZero: true,
           title: {
             display: true,
-            text: 'Consumo (m³)'
+            text: 'Consumo (kWh)'
           },
           ticks: {
             precision: 0
@@ -555,7 +610,7 @@ function desenharGrafico(karina, david, tatiana) {
           callbacks: {
             label: function (context) {
               const valor = context.parsed.y;
-              return `${context.label}: ${valor.toFixed(2)} m³`;
+              return `${context.label}: ${valor.toFixed(2)} kWh`;
             }
           }
         }
@@ -563,17 +618,61 @@ function desenharGrafico(karina, david, tatiana) {
     }
   });
 }
+// Função para obter nomes dinâmicos do localStorage ou padrão
+function getNomesDinamicos() {
+  const nomes = JSON.parse(localStorage.getItem('nomesPessoas') || '["Karina","Luiza","Tatiana"]');
+  if (!Array.isArray(nomes) || nomes.length !== 3) return ["Karina","Luiza","Tatiana"];
+  return nomes;
+}
 
+// Atualiza todos os labels de nomes na interface
+function atualizarNomesInterface() {
+  const nomes = getNomesDinamicos();
+  // Labels dos campos de leitura
+  const labelLeituraAnterior1 = document.getElementById('labelLeituraAnterior1');
+  const labelLeituraAnterior2 = document.getElementById('labelLeituraAnterior2');
+  const labelLeituraSalva1 = document.getElementById('labelLeituraSalva1');
+  const labelLeituraSalva2 = document.getElementById('labelLeituraSalva2');
+  const labelLeituraAtual1 = document.getElementById('labelLeituraAtual1');
+  const labelLeituraAtual2 = document.getElementById('labelLeituraAtual2');
+  const labelNome1 = document.getElementById('labelNome1');
+  const labelNome2 = document.getElementById('labelNome2');
+  const labelNome3 = document.getElementById('labelNome3');
+  if (labelLeituraAnterior1) labelLeituraAnterior1.textContent = `Leitura anterior ${nomes[0]} (kWh)`;
+  if (labelLeituraAnterior2) labelLeituraAnterior2.textContent = `Leitura anterior ${nomes[1]} (kWh)`;
+  if (labelLeituraSalva1) labelLeituraSalva1.textContent = nomes[0];
+  if (labelLeituraSalva2) labelLeituraSalva2.textContent = nomes[1];
+  if (labelLeituraAtual1) labelLeituraAtual1.textContent = `Leitura atual ${nomes[0]} (kWh)`;
+  if (labelLeituraAtual2) labelLeituraAtual2.textContent = `Leitura atual ${nomes[1]} (kWh)`;
+  if (labelNome1) labelNome1.textContent = nomes[0];
+  if (labelNome2) labelNome2.textContent = nomes[1];
+  if (labelNome3) labelNome3.textContent = nomes[2];
+}
 
-function verificarSenha() {
+// Atualizar nomes ao carregar a página
+window.addEventListener('DOMContentLoaded', atualizarNomesInterface);
+// Também atualizar ao voltar do configuracoes.html
+window.addEventListener('focus', atualizarNomesInterface);
+
+async function verificarSenha() {
   const senha = senhaInput.value;
-  if (senha === SENHA_MESTRA) {
+  const token = localStorage.getItem('token');
+  try {
+    const resp = await fetch('/api/usuario/verificar-senha', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+      },
+      body: JSON.stringify({ senha })
+    });
+    if (!resp.ok) throw new Error('Senha incorreta');
     senhaInput.classList.remove('is-invalid');
     senhaInput.classList.add('is-valid');
     senhaModal.hide();
     blocoInicial.classList.remove('d-none');
     blocoSalvo.classList.add('d-none');
-  } else {
+  } catch {
     senhaInput.classList.add('is-invalid');
   }
 }
@@ -587,7 +686,10 @@ function exportarPDF() {
   doc.text('Histórico de Faturas - Conta de Luz', 14, 20);
 
   // Busca histórico do backend para exportar (assíncrono)
-  fetch(`${API_BASE}/historico`)
+  const token = localStorage.getItem('token');
+  fetch(`${API_BASE}/historico`, {
+    headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+  })
     .then(res => res.json())
     .then(historico => {
       if (historico.length === 0) {
@@ -628,16 +730,14 @@ function exportarPDF() {
     });
 }
 
-// Alternar tema claro/escuro
-const btnTema = document.getElementById('toggleTheme');
-btnTema.addEventListener('click', () => {
-  document.body.classList.toggle('dark-mode');
-  if (document.body.classList.contains('dark-mode')) {
-    btnTema.innerHTML = '<i class="bi bi-sun-fill"></i> Modo Claro';
-  } else {
-    btnTema.innerHTML = '<i class="bi bi-moon-fill"></i> Modo Escuro';
-  }
-});
+// Botão sair (logout)
+const btnSair = document.getElementById('btnSair');
+if (btnSair) {
+  btnSair.addEventListener('click', () => {
+    localStorage.removeItem('token');
+    window.location.href = 'login.html';
+  });
+}
 </script>
 </body>
 </html>
