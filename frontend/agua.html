@@ -311,10 +311,7 @@ const senhaInput = document.getElementById('senhaInput');
 const modalElement = document.getElementById('senhaModal');
 const senhaModal = new bootstrap.Modal(modalElement);
 
-const API_BASE =
-  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:3000/api/agua'
-    : 'https://calculargastos.onrender.com/api/agua'; // Ajuste URL se necessário
+const API_BASE = 'https://calculargastos.onrender.com/api/agua';
 
 
 async function carregarLeiturasEHistorico() {
